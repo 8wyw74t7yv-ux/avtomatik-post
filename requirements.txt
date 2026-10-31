@@ -1,5 +1,5 @@
-requests
-google-genai
-google-api-python-client
-google-auth-oauthlib
-google-auth-httplib2
+aiogram==3.13.0
+pydub==0.25.1
+librosa==0.10.2
+soundfile==0.12.1
+numpy==1.26.4
