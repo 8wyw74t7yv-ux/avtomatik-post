@@ -1,7 +1,7 @@
 import os
-from dotenv import load
+from dotenv import load_dotenv
 
-# .env faylini o'qish
+# .env faylini o'qish uchun load_dotenv ishlatiladi
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
