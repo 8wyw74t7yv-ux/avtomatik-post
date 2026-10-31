@@ -1,5 +1,5 @@
 # Fly.io konfiguratsiya fayli (1GB RAM va 1 CPU tejamkor rejimi)
-app = "asmr-auto-agent" # Istasangiz o'z nomingizga o'zgartirishingiz mumkin
+app = "asmr-auto-agent-uz-2026" # Istasangiz o'z nomingizga o'zgartirishingiz mumkin
 primary_region = "fra"
 
 [build]
