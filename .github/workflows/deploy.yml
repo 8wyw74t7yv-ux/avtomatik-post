@@ -17,7 +17,7 @@ jobs:
         uses: superfly/flyctl-actions/setup-flyctl@master
 
       - name: Create app on Fly.io if not exists
-        run: flyctl apps create music-dj-agent-uz-2026 || true
+        run: flyctl apps create music-dj-bot-uz-2026 || true
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
