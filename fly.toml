@@ -1,0 +1,10 @@
+# Fly.io konfiguratsiya fayli (1GB RAM va 1 CPU tejamkor rejimi)
+app = "asmr-auto-agent" # Istasangiz o'z nomingizga o'zgartirishingiz mumkin
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[vm]
+  size = "shared-cpu-1x"
+  memory = "1gb"
