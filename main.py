@@ -15,7 +15,7 @@ IG_USER_ID = os.environ.get("IG_USER_ID")
 IG_ACCESS_TOKEN = os.environ.get("IG_ACCESS_TOKEN")
 
 # 📌 USERNAME JOYI (O'z userneymingizni shu yerga yozing)
-INSTAGRAM_USERNAME = os.environ.get("INSTAGRAM_USERNAME", "@YOUR_INSTAGRAM_USERNAME_HERE")
+INSTAGRAM_USERNAME = os.environ.get("INSTAGRAM_USERNAME", "@amirkhulov_r")
 
 UZB_TIMEZONE = ZoneInfo("Asia/Tashkent")
 LEONARDO_BASE_URL = "https://cloud.ai.leonardo.ai/api/rest/v1"
