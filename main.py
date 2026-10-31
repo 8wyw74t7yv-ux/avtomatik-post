@@ -8,37 +8,43 @@ import subprocess
 from google import genai
 from zoneinfo import ZoneInfo
 
+# YouTube API kutubxonalari
+import google.auth.credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+
 # --- SOZLAMALAR VA ENVIRONMENT O'ZGARUVCHILARI ---
 LEONARDO_API_KEY = os.environ.get("LEONARDO_API_KEY")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-IG_USER_ID = os.environ.get("IG_USER_ID")
-IG_ACCESS_TOKEN = os.environ.get("IG_ACCESS_TOKEN")
+
+# YouTube API kalitlari
+YT_CLIENT_ID = os.environ.get("YT_CLIENT_ID")
+YT_CLIENT_SECRET = os.environ.get("YT_CLIENT_SECRET")
+YT_REFRESH_TOKEN = os.environ.get("YT_REFRESH_TOKEN")
 
 # 📌 USERNAME JOYI (O'z userneymingizni shu yerga yozing)
-INSTAGRAM_USERNAME = os.environ.get("INSTAGRAM_USERNAME", "@amirkhulov_r")
+INSTAGRAM_USERNAME = os.environ.get("INSTAGRAM_USERNAME", "@YOUR_USERNAME_HERE")
 
 UZB_TIMEZONE = ZoneInfo("Asia/Tashkent")
 LEONARDO_BASE_URL = "https://cloud.ai.leonardo.ai/api/rest/v1"
 
-# Gemini klienta
+# Gemini klienti
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 
 def get_next_idea():
     """10,000 talik bazadan (ideas.json) navbatdagi g'oyani oladi"""
     if not os.path.exists("ideas.json"):
-        return "satisfying liquid glowing metallic substance loop"
+        return "satisfying hyper-detailed liquid metallic glowing substance flowing in endless loop"
     
     with open("ideas.json", "r", encoding="utf-8") as f:
         data = json.load(f)
         ideas = data.get("ideas", [])
     
     if not ideas:
-        return "satisfying glowing metallic substance loop"
+        return "satisfying hyper-detailed liquid metallic glowing substance flowing in endless loop"
     
-    # Hozircha birinchisini olamiz (keyinchalik o'qilganini o'chirib borish mumkin)
-    idea = ideas[0]
-    return idea
+    return ideas[0]
 
 
 def enhance_prompt_with_gemini(raw_idea):
@@ -88,7 +94,6 @@ def generate_video_leonardo(prompt):
     gen_id = data.get("sdGenerationJob", {}).get("generationId")
     print(f"⏳ Generatsiya boshlandi (ID: {gen_id}). Kutilmoqda...")
     
-    # Generatsiya tayyor bo'lishini kutamiz (Polling)
     time.sleep(30)
     
     status_res = requests.get(f"{LEONARDO_BASE_URL}/generations/{gen_id}", headers=headers)
@@ -107,11 +112,9 @@ def generate_video_leonardo(prompt):
 
 def process_video_ffmpeg(input_path, output_path):
     """FFmpeg yordamida pastki chap burchakka logotip va username qo'shish (1GB RAM tejamkor)"""
-    # Agar repo ichida 'ig_logo.png' bo'lsa uni qo'shamiz, bo'lmasa faqat matn yozamiz
     logo_path = "ig_logo.png"
     
     if os.path.exists(logo_path):
-        # Logotip va matnni pastki chap burchakka qo'yish (overlay)
         filter_complex = (
             f"[1:v]scale=40:40[logo];"
             f"[0:v][logo]overlay=15:H-h-15[bg];"
@@ -124,7 +127,6 @@ def process_video_ffmpeg(input_path, output_path):
             "-map", "0:a?", "-c:v", "libx264", "-crf", "23", "-preset", "ultrafast", output_path
         ]
     else:
-        # Faqat matnli watermark (agar logo fayl yuklanmagan bo'lsa)
         cmd = [
             "ffmpeg", "-y", "-i", input_path,
             "-vf", f"drawtext=text='{INSTAGRAM_USERNAME}':fontcolor=white:fontsize=24:"
@@ -135,44 +137,58 @@ def process_video_ffmpeg(input_path, output_path):
     subprocess.run(cmd, check=True)
 
 
-def publish_to_instagram(video_url, caption):
-    """Meta Graph API orqali Instagram Reels joylash"""
-    # 1. Konteyner yaratish
-    container_url = f"https://graph.facebook.com/v18.0/{IG_USER_ID}/media"
-    payload = {
-        "media_type": "REELS",
-        "video_url": video_url,
-        "caption": caption,
-        "access_token": IG_ACCESS_TOKEN
-    }
-    res = requests.post(container_url, data=payload)
-    res_data = res.json()
-    creation_id = res_data.get("id")
-    
-    if not creation_id:
-        print(f"❌ Instagram konteyner xatosi: {res.text}")
-        return False
+def publish_to_youtube(video_path, title, description):
+    """YouTube Data API v3 orqali avtomatik Shorts yuklash"""
+    try:
+        creds = google.auth.credentials.Credentials(
+            token=None,
+            refresh_token=YT_REFRESH_TOKEN,
+            client_id=YT_CLIENT_ID,
+            client_secret=YT_CLIENT_SECRET,
+            token_uri="https://oauth2.googleapis.com/token"
+        )
         
-    print(f"⏳ Reels yuklanmoqda... ID: {creation_id}")
-    time.sleep(20) # Serverga yuklanishini kutamiz
-    
-    # 2. Nashr qilish (Publish)
-    publish_url = f"https://graph.facebook.com/v18.0/{IG_USER_ID}/media_publish"
-    publish_payload = {
-        "creation_id": creation_id,
-        "access_token": IG_ACCESS_TOKEN
-    }
-    pub_res = requests.post(publish_url, data=publish_payload)
-    if pub_res.status_code == 200:
-        print("✅ Reels muvaffaqiyatli e'lon qilindi!")
+        youtube = build('youtube', 'v3', credentials=creds)
+        
+        body = {
+            'snippet': {
+                'title': title[:100],
+                'description': f"{description}\n\n#shorts #asmr #satisfying",
+                'tags': ["asmr", "satisfying", "shorts", "loop"],
+                'categoryId': '24' # Entertainment
+            },
+            'status': {
+                'privacyStatus': 'public',
+                'selfDeclaredMadeForKids': False
+            }
+        }
+        
+        media = MediaFileUpload(video_path, chunksize=-1, resumable=True, mimetype='video/mp4')
+        
+        request = youtube.videos().insert(
+            part='snippet,status',
+            body=body,
+            media_body=media
+        )
+        
+        response = None
+        while response is None:
+            status, response = request.next_chunk()
+            if status:
+                print(f"📥 Yuklanmoqda: {int(status.progress() * 100)}%")
+                
+        print(f"✅ YouTube Shorts muvaffaqiyatli e'lon qilindi! ID: {response.get('id')}")
         return True
-    else:
-        print(f"❌ Nashr qilishda xatolik: {pub_res.text}")
+    except Exception as e:
+        print(f"❌ YouTube'ga yuklashda xatolik: {e}")
         return False
 
 
 def run_pipeline():
     print("🚀 Kontent quvuri ishga tushdi...")
+    temp_input = "temp_raw.mp4"
+    temp_output = "temp_final.mp4"
+    
     try:
         # 1. G'oya va Gemini prompt
         raw_idea = get_next_idea()
@@ -187,10 +203,6 @@ def run_pipeline():
             print("❌ Video olinmadi, jarayon to'xtatildi.")
             return
             
-        # Videoni vaqtincha yuklab olish
-        temp_input = "temp_raw.mp4"
-        temp_output = "temp_final.mp4"
-        
         with open(temp_input, "wb") as f:
             f.write(requests.get(raw_video_url).content)
             
@@ -198,24 +210,22 @@ def run_pipeline():
         print("🎬 FFmpeg yordamida watermark qo'shilmoqda...")
         process_video_ffmpeg(temp_input, temp_output)
         
-        # 4. Instagram uchun caption yaratish (Gemini orqali)
-        caption_res = client.models.generate_content(
+        # 4. Gemini orqali sarlavha (Title) yaratish
+        title_res = client.models.generate_content(
             model='gemini-2.5-flash',
-            contents=f"Write a short, engaging Instagram Reels caption and 3-4 trending ASMR/satisfying hashtags for this idea: {raw_idea}. NO TEXT IN VIDEO."
+            contents=f"Write a catchy, short YouTube Shorts title with emojis for this ASMR idea: {raw_idea}"
         )
-        caption = caption_res.text.strip()
+        title = title_res.text.strip()
         
-        # (Eslatma: Haqiqiy production muhitda video_url ochiq internetda turishi kerak, 
-        # fly.io da vaqtincha public saqlash yoki to'g'ridan-to'g'ri binary yuborish ishlatiladi)
-        # Hozircha raw_video_url ni beramiz yoki serverdan public link qilamiz.
-        publish_to_instagram(raw_video_url, caption)
+        # 5. YouTube Shorts'ga yuklash
+        publish_to_youtube(temp_output, title, raw_idea)
         
     except Exception as e:
         print(f"❌ Xatolik yuz berdi: {e}")
         
     finally:
         # 🧹 1GB RAMni tozalash (Cleanup)
-        for f in ["temp_raw.mp4", "temp_final.mp4"]:
+        for f in [temp_input, temp_output]:
             if os.path.exists(f):
                 os.remove(f)
         print("🧹 Xotira tozalandi.")
@@ -230,14 +240,12 @@ def schedule_loop():
         today_times = []
         
         for h in target_hours:
-            # Har bir soatga tasodifiy minut qo'shamiz (masalan, 09:14, 11:42 va h.k.)
             m = random.randint(0, 55)
             t = now.replace(hour=h, minute=m, second=0, microsecond=0)
             if t > now:
                 today_times.append(t)
                 
         if not today_times:
-            # Agar bugungi vaqtlar o'tib ketgan bo'lsa, ertangi kunning birinchi vaqtini olamiz
             tomorrow = now + datetime.timedelta(days=1)
             next_run = tomorrow.replace(hour=target_hours[0], minute=random.randint(0, 55), second=0)
         else:
@@ -251,9 +259,6 @@ def schedule_loop():
 
 
 if __name__ == "__main__":
-    # SHART: Birinchi video darhol (hozirning o'zida) ishga tushadi!
     print("🔥 Birinchi video hozir ishga tushirilmoqda...")
     run_pipeline()
-    
-    # Keyingilari esa random vaqtlar bo'yicha davom etadi
     schedule_loop()
