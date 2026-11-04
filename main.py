@@ -8,12 +8,20 @@ from aiogram.client.default import DefaultBotProperties
 from config import BOT_TOKEN
 from database import db
 
+# Barcha handler modullarini import qilish
+from handlers.start import start_router
+from handlers.music import music_router
+from handlers.effects import effects_router
+from handlers.vault import vault_router
+from handlers.business import business_router
+from handlers.admin import admin_router
+
 # Loggingni sozlash
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
 
 async def main():
-    # Bot obyektini yaratish (ParseMode HTML qilib belgilanadi)
+    # Bot obyektini yaratish
     bot = Bot(
         token=BOT_TOKEN,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
@@ -26,14 +34,18 @@ async def main():
 
     try:
         logger.info("Bot ishga tushmoqda...")
-        # Eski update'larni o'tkazib yuborish va Polling boshlash
+        # Eski update'larni o'tkazib yuborish
         await bot.delete_webhook(drop_pending_updates=True)
         
-        # Bu yerda kelgusida boshqa handler router'lar ulanadi
-        # dp.include_router(start_router)
-        # dp.include_router(admin_router)
-        # dp.include_router(music_router)
+        # 2. Barcha handler router'larni Dispatcher'ga ulash (Tartib muhim!)
+        dp.include_router(start_router)
+        dp.include_router(music_router)
+        dp.include_router(effects_router)
+        dp.include_router(vault_router)
+        dp.include_router(business_router)
+        dp.include_router(admin_router)
 
+        # Polling boshlash
         await dp.start_polling(bot)
     finally:
         await db.close()
