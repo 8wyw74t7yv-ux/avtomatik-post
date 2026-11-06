@@ -13,7 +13,6 @@ from handlers.start import start_router
 from handlers.music import music_router
 from handlers.effects import effects_router
 from handlers.vault import vault_router
-from handlers.business import business_router
 from handlers.admin import admin_router
 
 # Loggingni sozlash
@@ -42,7 +41,6 @@ async def main():
         dp.include_router(music_router)
         dp.include_router(effects_router)
         dp.include_router(vault_router)
-        dp.include_router(business_router)
         dp.include_router(admin_router)
 
         # Polling boshlash
