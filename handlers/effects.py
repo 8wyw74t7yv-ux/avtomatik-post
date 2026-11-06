@@ -10,7 +10,6 @@ from aiogram.exceptions import TelegramBadRequest
 logger = logging.getLogger(__name__)
 effects_router = Router()
 
-# 100 ta professional audio effektlar ro'yxati
 ALL_EFFECTS = [
     "1. Faqat Vokalni Ajratib Olish (Acapella)",
     "2. Vokalni O‘chirish (Minus / Instrumental)",
@@ -114,19 +113,9 @@ ALL_EFFECTS = [
     "100. Master DJ Final Polish"
 ]
 
-@effects_router.callback_query(F.data.startswith("fx_nav_"))
-async def navigate_effects(callback: CallbackQuery):
-    parts = callback.data.split("_")
-    index = int(parts[2])
-    intensity = int(parts[3]) if len(parts) > 3 else 50
-
-    if index < 0:
-        index = len(ALL_EFFECTS) - 1
-    elif index >= len(ALL_EFFECTS):
-        index = 0
-
+async def show_effect_panel(message, index=0, intensity=50, edit=True):
+    """Effektlar panelini chizib beruvchi umumiy yordamchi funksiya"""
     current_effect = ALL_EFFECTS[index]
-
     text = (
         "🎛 <b>Professional Audio Effektlar Markazi</b>\n\n"
         f"Tanlangan effekt ({index + 1}/100):\n<b>✨ {current_effect}</b>\n\n"
@@ -134,8 +123,8 @@ async def navigate_effects(callback: CallbackQuery):
         "Tugmalar orqali sozlating:"
     )
 
-    prev_idx = index - 1
-    next_idx = index + 1
+    prev_idx = index - 1 if index > 0 else len(ALL_EFFECTS) - 1
+    next_idx = index + 1 if index < len(ALL_EFFECTS) - 1 else 0
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
@@ -152,10 +141,21 @@ async def navigate_effects(callback: CallbackQuery):
         [InlineKeyboardButton(text="⬅️ Ortga (Audio Menyu)", callback_data="back_to_audio_menu")]
     ])
 
-    try:
-        await callback.message.edit_text(text, reply_markup=keyboard)
-    except TelegramBadRequest:
-        pass
+    if edit:
+        try:
+            await message.edit_text(text, reply_markup=keyboard)
+        except TelegramBadRequest:
+            pass
+    else:
+        await message.answer(text, reply_markup=keyboard)
+
+
+@effects_router.callback_query(F.data.startswith("fx_nav_"))
+async def navigate_effects(callback: CallbackQuery):
+    parts = callback.data.split("_")
+    index = int(parts[2])
+    intensity = int(parts[3]) if len(parts) > 3 else 50
+    await show_effect_panel(callback.message, index=index, intensity=intensity, edit=True)
     await callback.answer()
 
 
@@ -165,8 +165,7 @@ async def auto_configure_single_effect(callback: CallbackQuery):
     index = int(parts[2])
     rand_val = random.randint(30, 95)
     await callback.answer(f"🎲 Avtomatik kuchlanish: {rand_val}%", show_alert=True)
-    callback.data = f"fx_nav_{index}_{rand_val}"
-    await navigate_effects(callback)
+    await show_effect_panel(callback.message, index=index, intensity=rand_val, edit=True)
 
 
 @effects_router.callback_query(F.data.startswith("fx_apply_"))
@@ -192,16 +191,15 @@ async def apply_audio_effect(callback: CallbackQuery, state: FSMContext):
 
     await callback.bot.download_file(file.file_path, destination=input_file)
 
-    # Effekt indeksiga qarab mos keluvchi FFmpeg filtri
     filter_arg = "volume=1.0"
-    if index == 2:  # 3. Toza 8D Audio
+    if index == 2:  # Toza 8D Audio
         filter_arg = f"apulsator=mode=sine:hz={intensity/20}"
-    elif index in [3, 55, 79]:  # Reverb / Echo turkumi
+    elif index in [3, 55, 79]:  # Reverb / Echo
         filter_arg = f"aecho=0.8:0.88:60:{intensity/100}"
-    elif index in [4, 37, 38]:  # Suv osti / Filterlar
+    elif index in [4, 37, 38]:  # Filterlar
         cut_freq = max(200, 2000 - (intensity * 15))
         filter_arg = f"lowpass=frequency={cut_freq}"
-    elif index == 8:  # 9. Nightcore Generator
+    elif index == 8:  # Nightcore
         rate = 44100 * (1 + intensity/200)
         filter_arg = f"asetrate={rate},aresample=44100"
     elif index in [20, 62]:  # Bass Booster
