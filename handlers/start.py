@@ -150,3 +150,64 @@ async def settings_menu(callback: CallbackQuery):
 @start_router.callback_query(F.data == "toggle_notif")
 async def toggle_notification_setting(callback: CallbackQuery):
     await callback.answer("✅ Bildirishnoma sozlamasi saqlandi!", show_alert=True)
+@start_router.callback_query(F.data == "settings")
+async def settings_menu(callback: CallbackQuery):
+    """Bot sozlamalari menyusi"""
+    text = (
+        "⚙️ <b>Bot Sozlamalari</b>\n\n"
+        "Quyidagi sozlamalardan birini tanlang:"
+    )
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔔 Bildirishnomalar: Yoqilgan", callback_data="toggle_notif")],
+        [InlineKeyboardButton(text="⬅️ Asosiy Menyu", callback_data="main_menu")]
+    ])
+    try:
+        await callback.message.edit_text(text, reply_markup=keyboard)
+    except TelegramBadRequest:
+        pass
+    await callback.answer()
+
+@start_router.callback_query(F.data == "toggle_notif")
+async def toggle_notification_setting(callback: CallbackQuery):
+    await callback.answer("✅ Bildirishnoma sozlamasi saqlandi!", show_alert=True)
+
+
+@start_router.callback_query(F.data == "help")
+async def help_menu(callback: CallbackQuery):
+    """Batafsil Foydalanish Qo'llanmasi"""
+    text = (
+        "📖 <b>Music Hub Bot — To'liq Foydalanish Qo'llanmasi</b>\n\n"
+        "Botimiz yordamida musiqalaringizni professional darajada tahrirlashingiz, 51 ta noyob effekt qo'shishingiz va bulutda saqlashingiz mumkin. Mana har bir bo'lim bo'yicha qo'llanma:\n\n"
+        
+        "1️⃣ <b>Musiqa Yuborish va Tahrirlash:</b>\n"
+        "• Botga istalgan audio fayl yoki musiqa (`.mp3` va boshqalar) yuboring.\n"
+        "• Bot uni qabul qilib, uning <b>Nomi (Title)</b>, <b>Artist (Ijrochi)</b> yoki <b>Albomi rasmini</b> o'zgartirishni taklif qiladi. Istasangiz o'zgartirasiz, istasangiz to'g'ridan-to'g'ri effektlarga o'tasiz.\n\n"
+        
+        "2️⃣ <b>51 ta Professional Effektlar Markazi:</b>\n"
+        "• Musiqa menyusidan yoki effektlar bo'limidan kirgach, sahifalarga bo'linmagan holda <code>⬅️ Oldingi</code> va <code>Keyingi ➡️</code> tugmalari orqali barcha 51 ta effektni birma-bir aylanib chiqasiz.\n"
+        "• <code>➖ 1%</code> va <code>➕ 1%</code> tugmalari yordamida effekt kuchlanishini o'zingizga yoqqan darajada (0% dan 100% gacha) sozlaysiz.\n"
+        "• <code>🎲 Avtomatik</code> — random tarzda optimal kuchlanish tanlaydi.\n"
+        "• <code>✅ Tayyor</code> — tugmasini bosish orqali FFmpeg orqali ishlov berilgan tayyor musiqani qabul qilasiz.\n\n"
+        
+        "3️⃣ <b>Musiqani Aniq Kesish (Cut Audio):</b>\n"
+        "• Musiqani kerakli joyidan kesish uchun boshlanish vaqtini yuborasiz (Masalan: <code>28:3</code> formatida — 28-soniya va 3-millisekund).\n"
+        "• So'ngra kesish davomiyligini (5s, 10s, 20s, 30s, 50s) tanlab, 'Tayyor'ni bosasiz.\n\n"
+        
+        "4️⃣ <b>🎧 Mening Pleylistim (Cloud Vault):</b>\n"
+        "• O'zingiz tahrirlagan va saqlagan barcha musiqalar Telegram bulutida xavfsiz saqlanadi.\n"
+        "• <b>Sana bo'yicha qidirish:</b> <code>2026-11-06</code> shaklida sana yuborib, o'sha kundagi musiqalaringizni topasiz.\n"
+        "• <b>Kanalga uzatish:</b> Pleylestingizdagi musiqalarni o'zingiz ko'rsatgan kanalga (takrorlanmaydigan qilib) avtomatik yuborishingiz mumkin.\n\n"
+        
+        "5️⃣ <b>👨‍💻 Bot Yaratuvchisi:</b>\n"
+        "• Dasturchi bilan bog'lanish uchun to'g'ridan-to'g'ri havoladan foydalanasiz."
+    )
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="⬅️ Asosiy Menyu", callback_data="main_menu")]
+    ])
+    
+    try:
+        await callback.message.edit_text(text, reply_markup=keyboard)
+    except TelegramBadRequest:
+        pass
+    await callback.answer()
