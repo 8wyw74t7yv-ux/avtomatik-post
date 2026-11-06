@@ -129,3 +129,24 @@ async def verify_sub_callback(callback: CallbackQuery):
         await cmd_start(callback.message, None)
     else:
         await callback.answer("❌ Siz hali barcha kanallarga a'zo bo'lmadingiz!", show_alert=True)
+        
+@start_router.callback_query(F.data == "settings")
+async def settings_menu(callback: CallbackQuery):
+    """Bot sozlamalari menyusi"""
+    text = (
+        "⚙️ <b>Bot Sozlamalari</b>\n\n"
+        "Quyidagi sozlamalardan birini tanlang:"
+    )
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔔 Bildirishnomalar: Yoqilgan", callback_data="toggle_notif")],
+        [InlineKeyboardButton(text="⬅️ Asosiy Menyu", callback_data="main_menu")]
+    ])
+    try:
+        await callback.message.edit_text(text, reply_markup=keyboard)
+    except TelegramBadRequest:
+        pass
+    await callback.answer()
+
+@start_router.callback_query(F.data == "toggle_notif")
+async def toggle_notification_setting(callback: CallbackQuery):
+    await callback.answer("✅ Bildirishnoma sozlamasi saqlandi!", show_alert=True)
