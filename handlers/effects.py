@@ -191,23 +191,34 @@ async def apply_audio_effect(callback: CallbackQuery, state: FSMContext):
 
     await callback.bot.download_file(file.file_path, destination=input_file)
 
+        # Effekt indeksiga qarab real va kuchli ta'sir qiluvchi FFmpeg filtrlari
     filter_arg = "volume=1.0"
-    if index == 2:  # Toza 8D Audio
-        filter_arg = f"apulsator=mode=sine:hz={intensity/20}"
-    elif index in [3, 55, 79]:  # Reverb / Echo
-        filter_arg = f"aecho=0.8:0.88:60:{intensity/100}"
-    elif index in [4, 37, 38]:  # Filterlar
-        cut_freq = max(200, 2000 - (intensity * 15))
+    
+    if index == 2:  # 3. Toza 8D Audio (Tebranish kuchaytirildi)
+        hz_speed = max(0.1, intensity / 10)
+        filter_arg = f"apulsator=mode=sine:hz={hz_speed}"
+        
+    elif index in [3, 55, 79]:  # Reverb / Cathedral (Kengaytirildi)
+        delay = int(intensity * 1.5)
+        filter_arg = f"aecho=0.8:0.9:{delay}:0.5"
+        
+    elif index in [4, 37, 38]:  # Suv osti / Low-pass (Keskinroq)
+        cut_freq = max(100, 4000 - (intensity * 35))
         filter_arg = f"lowpass=frequency={cut_freq}"
-    elif index == 8:  # Nightcore
-        rate = 44100 * (1 + intensity/200)
-        filter_arg = f"asetrate={rate},aresample=44100"
-    elif index in [20, 62]:  # Bass Booster
-        gain = int(intensity / 5)
-        filter_arg = f"equalizer=f=60:width_type=h:width=50:g={gain}"
+        
+    elif index == 8:  # 9. Nightcore Generator (Tezlik va ton balandligi)
+        tempo = 1.0 + (intensity / 150)
+        pitch = 44100 * (1 + intensity / 200)
+        filter_arg = f"asetrate={pitch},aresample=44100,atempo={min(2.0, tempo)}"
+        
+    elif index in [20, 62, 21]:  # Bass Booster (Haqiqiy kuchli sub-bass)
+        gain_db = int(intensity / 3)  # 0 dan 33 dB gacha kuchaytiradi
+        filter_arg = f"equalizer=f=60:width_type=h:width=100:g={gain_db}"
+        
     else:
-        vol = intensity / 50.0
-        filter_arg = f"volume={vol}"
+        # Boshqa barcha effektlar uchun ovoz hajmini va dinamikasini sezilarli o'zgartirish
+        vol_multiplier = intensity / 25.0  # 0 dan 4 barobargacha
+        filter_arg = f"volume={vol_multiplier}"
 
     cmd = [
         "ffmpeg", "-y", "-i", input_file,
