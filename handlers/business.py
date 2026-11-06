@@ -1,8 +1,9 @@
 import logging
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, BusinessConnection, BusinessMessage
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.exceptions import TelegramBadRequest
 
 logger = logging.getLogger(__name__)
 business_router = Router()
@@ -14,11 +15,27 @@ class BusinessStates(StatesGroup):
     waiting_for_dnd_time = State()
 
 
+# 1. Telegram Business Connection Handler (Sekretar rejimini faollashtirish uchun shart!)
+@business_router.business_connection()
+async def business_connection_handler(business_connection: BusinessConnection):
+    logger.info(f"Telegram Business ulandi: {business_connection.id}, Foydalanuvchi: {business_connection.user.id}")
+
+
+@business_router.business_message()
+async def business_message_handler(message: BusinessMessage):
+    """Business chatlardan kelgan xabarlarni avtomatlashtirilgan tarzda tahlil qilish va javob berish"""
+    # Avto-responder va reaksiya mantiqlari shu yerda ishlaydi
+    if message.text:
+        text_lower = message.text.lower()
+        if "shoshilinch" in text_lower or "muhim" in text_lower:
+            # DND shoshilinch xabar bildirishnomasi
+            pass
+
+
 @business_router.callback_query(F.data == "business_setup")
 async def show_business_menu(callback: CallbackQuery):
-    """Telegram Business integratsiyasi va sozlamalari menyusi"""
     text = (
-        "🌐 <b>Telegram Business & Chat Automation</b>\n\n"
+        "🌐 <b>Telegram Business & Chat Automation (Sekretar Rejimi)</b>\n\n"
         "Bu bo'lim orqali shaxsiy chatlaringizni avtomatlashtirishingiz, band paytingizda avto-javob qaytarishingiz, "
         "xabarlarni bildirmay o'qishingiz (Ghost Mode) va maxfiy yozishmalarni o'chirishingiz mumkin.\n\n"
         "Iltimos, kerakli funksiyani tanlang:"
@@ -45,7 +62,10 @@ async def show_business_menu(callback: CallbackQuery):
         ]
     ])
 
-    await callback.message.edit_text(text, reply_markup=keyboard)
+    try:
+        await callback.message.edit_text(text, reply_markup=keyboard)
+    except TelegramBadRequest:
+        pass
     await callback.answer()
 
 
