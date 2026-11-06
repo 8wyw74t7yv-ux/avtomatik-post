@@ -286,11 +286,3 @@ async def save_to_vault_callback(callback: CallbackQuery, state: FSMContext):
         """, user_id, file_id, title, artist)
 
     await callback.answer("✅ Musiqa shaxsiy bulutli seyfingizga saqlandi!", show_alert=True)
-
-
-# ==================== 4. EFFEKTLARGA O'TISH ====================
-@music_router.callback_query(F.data == "music_effects_menu")
-async def open_effects_main_menu(callback: CallbackQuery):
-    from handlers.effects import navigate_effects
-    callback.data = "fx_nav_0_50"
-    await navigate_effects(callback)
