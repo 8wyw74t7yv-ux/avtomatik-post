@@ -83,7 +83,6 @@ async def save_new_title(message: Message, state: FSMContext):
     new_title = message.text.strip()
     await state.update_data(title=new_title)
     
-    # FFmpeg orqali metadata yangilash va faylni yuborish
     data = await state.get_data()
     await apply_metadata_and_send(message, data, state)
 
@@ -286,3 +285,12 @@ async def save_to_vault_callback(callback: CallbackQuery, state: FSMContext):
         """, user_id, file_id, title, artist)
 
     await callback.answer("✅ Musiqa shaxsiy bulutli seyfingizga saqlandi!", show_alert=True)
+
+
+# ==================== 4. EFFEKTLARGA O'TISH ====================
+@music_router.callback_query(F.data == "music_effects_menu")
+async def open_effects_main_menu(callback: CallbackQuery):
+    """'Effekt berish' tugmasi bosilganda to'g'ridan-to'g'ri effects.py dan panelni ochadi"""
+    from handlers.effects import show_effect_panel
+    await show_effect_panel(callback.message, index=0, intensity=50, edit=True)
+    await callback.answer()
