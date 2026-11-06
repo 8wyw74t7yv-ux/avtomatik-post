@@ -1,6 +1,6 @@
 import logging
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, BusinessConnection, BusinessMessage
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, BusinessConnection
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.exceptions import TelegramBadRequest
@@ -15,20 +15,18 @@ class BusinessStates(StatesGroup):
     waiting_for_dnd_time = State()
 
 
-# 1. Telegram Business Connection Handler (Sekretar rejimini faollashtirish uchun shart!)
+# 1. Telegram Business Connection Handler
 @business_router.business_connection()
 async def business_connection_handler(business_connection: BusinessConnection):
     logger.info(f"Telegram Business ulandi: {business_connection.id}, Foydalanuvchi: {business_connection.user.id}")
 
 
-@business_router.business_message()
-async def business_message_handler(message: BusinessMessage):
-    """Business chatlardan kelgan xabarlarni avtomatlashtirilgan tarzda tahlil qilish va javob berish"""
-    # Avto-responder va reaksiya mantiqlari shu yerda ishlaydi
+@business_router.message(F.business_connection_id)
+async def business_message_handler(message: Message):
+    """Business chatlardan kelgan xabarlarni tahlil qilish (Oddiy Message class ishlatiladi)"""
     if message.text:
         text_lower = message.text.lower()
         if "shoshilinch" in text_lower or "muhim" in text_lower:
-            # DND shoshilinch xabar bildirishnomasi
             pass
 
 
