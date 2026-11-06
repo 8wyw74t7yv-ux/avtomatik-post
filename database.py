@@ -8,10 +8,9 @@ class Database:
     def __init__(self):
         self.pool = None
 
-        async def connect(self):
+    async def connect(self):
         """PostgreSQL ulanish hovuzini (pool) yaratish"""
         try:
-            # Supabase PgBouncer bilan ishlashi uchun statement_cache_size=0 qo'shildi
             self.pool = await asyncpg.create_pool(DATABASE_URL, statement_cache_size=0)
             logger.info("PostgreSQL ma'lumotlar bazasiga muvaffaqiyatli ulandi!")
             await self.create_tables()
@@ -34,7 +33,7 @@ class Database:
                     user_id BIGINT PRIMARY KEY,
                     username TEXT,
                     full_name TEXT,
-                    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     is_banned BOOLEAN DEFAULT FALSE,
                     is_vip BOOLEAN DEFAULT FALSE,
                     vip_expires_at TIMESTAMP
@@ -62,6 +61,7 @@ class Database:
                     file_unique_id TEXT,
                     file_id TEXT,
                     title TEXT,
+                    performer TEXT,
                     saved_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
             """)
@@ -113,8 +113,8 @@ class Database:
             
             logger.info("Barcha PostgreSQL jadvallari muvaffaqiyatli tekshirildi va yaratildi.")
 
-    # Foydalanuvchini qo'shish yoki yangilash
     async def add_user(self, user_id: int, username: str, full_name: str):
+        """Foydalanuvchini qo'shish yoki yangilash"""
         async with self.pool.acquire() as connection:
             await connection.execute("""
                 INSERT INTO users (user_id, username, full_name)
@@ -124,10 +124,12 @@ class Database:
             """, user_id, username, full_name)
 
     async def get_user(self, user_id: int):
+        """Foydalanuvchini olish"""
         async with self.pool.acquire() as connection:
             return await connection.fetchrow("SELECT * FROM users WHERE user_id = $1;", user_id)
 
     async def get_total_users_count(self) -> int:
+        """Jami foydalanuvchilar soni"""
         async with self.pool.acquire() as connection:
             return await connection.fetchval("SELECT COUNT(*) FROM users;")
 
