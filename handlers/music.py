@@ -3,6 +3,7 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.exceptions import TelegramBadRequest
 
 logger = logging.getLogger(__name__)
 music_router = Router()
@@ -11,12 +12,11 @@ class MusicEditStates(StatesGroup):
     waiting_for_title = State()
     waiting_for_artist = State()
     waiting_for_cover = State()
-    waiting_for_cut_time = State()
 
 
 @music_router.message(F.audio | F.document)
 async def handle_incoming_audio(message: Message, state: FSMContext):
-    """Foydalanuvchi musiqa tashlaganda ishlaydigan asosiy qabul qiluvchi"""
+    """Foydalanuvchi musiqa tashlaganda qabul qilib, tahrirlash yoki effekt tanlashni taklif qilish"""
     file_id = message.audio.file_id if message.audio else message.document.file_id
     title = message.audio.title if message.audio and message.audio.title else "Noma'lum trek"
     artist = message.audio.performer if message.audio and message.audio.performer else "Noma'lum artist"
@@ -53,7 +53,10 @@ async def music_edit_menu(callback: CallbackQuery):
         [InlineKeyboardButton(text="🎤 Artist Tag Qo'shish", callback_data="edit_artist")],
         [InlineKeyboardButton(text="🎛 Effektlar Menyuiga O'tish", callback_data="music_effects_menu")]
     ])
-    await callback.message.edit_text(text, reply_markup=keyboard)
+    try:
+        await callback.message.edit_text(text, reply_markup=keyboard)
+    except TelegramBadRequest:
+        pass
     await callback.answer()
 
 
@@ -105,39 +108,16 @@ async def save_new_cover(message: Message, state: FSMContext):
 
 async def show_effects_menu_after_edit(message: Message):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🎛 50+ Effektlar Menusi", callback_data="music_effects_menu")],
+        [InlineKeyboardButton(text="🎛 51+ Effektlar Menusi", callback_data="music_effects_menu")],
         [InlineKeyboardButton(text="✂️ Musiqani Kesish", callback_data="cut_audio_start")],
-        [InlineKeyboardButton(text="🎥 Video Vizualizator (Story)", callback_data="visualizer_start")]
+        [InlineKeyboardButton(text="✅ Tayyor", callback_data="fx_finish")]
     ])
     await message.answer("Quyidagi menyudan foydalanishingiz mumkin:", reply_markup=keyboard)
 
 
 @music_router.callback_query(F.data == "music_effects_menu")
 async def open_effects_main_menu(callback: CallbackQuery):
-    text = (
-        "🎛 <b>Professional Audio Effektlar Markazi</b>\n\n"
-        "Quyidagi turkumdagi effektlardan birini tanlang:\n"
-        "<i>(Har bir effekt server xotirasini band qilmasdan, Telegram file_id va FFmpeg orqali ishlaydi)</i>"
-    )
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="🎧 8D & Reverb", callback_data="fx_page_1"),
-            InlineKeyboardButton(text="🤖 Robot & Pitch", callback_data="fx_page_2")
-        ],
-        [
-            InlineKeyboardButton(text="🎸 Bass & Booster", callback_data="fx_page_3"),
-            InlineKeyboardButton(text="📻 Vinyl & Lo-Fi", callback_data="fx_page_4")
-        ],
-        [
-            InlineKeyboardButton(text="✂️ Musiqani Kesish", callback_data="cut_audio_start"),
-            InlineKeyboardButton(text="🎥 Video Vizualizator", callback_data="visualizer_start")
-        ],
-        [
-            InlineKeyboardButton(text="⬅️ Asosiy Menyu", callback_data="main_menu")
-        ]
-    ])
-    try:
-        await callback.message.edit_text(text, reply_markup=keyboard)
-    except TelegramBadRequest:
-        pass
-    await callback.answer()
+    # To'g'ridan-to'g'ri 1-effektdan boshlab ⬅️➡️ boshqaruvga o'tish (fx_nav_0_50)
+    from handlers.effects import navigate_effects
+    callback.data = "fx_nav_0_50"
+    await navigate_effects(callback)
