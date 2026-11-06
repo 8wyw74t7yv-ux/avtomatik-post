@@ -8,10 +8,11 @@ class Database:
     def __init__(self):
         self.pool = None
 
-    async def connect(self):
+        async def connect(self):
         """PostgreSQL ulanish hovuzini (pool) yaratish"""
         try:
-            self.pool = await asyncpg.create_pool(DATABASE_URL)
+            # Supabase PgBouncer bilan ishlashi uchun statement_cache_size=0 qo'shildi
+            self.pool = await asyncpg.create_pool(DATABASE_URL, statement_cache_size=0)
             logger.info("PostgreSQL ma'lumotlar bazasiga muvaffaqiyatli ulandi!")
             await self.create_tables()
         except Exception as e:
